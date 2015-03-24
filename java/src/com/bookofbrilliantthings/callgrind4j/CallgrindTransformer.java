@@ -15,6 +15,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
 
 /**
  * Transforms bytecode to generate the callgrind input file.
@@ -132,19 +134,25 @@ public class CallgrindTransformer implements ClassFileTransformer {
     return slashName.replace('/', '.');
   }
 
+  private final static int ASM_VERSION = Opcodes.ASM5;
+
   @Override
   public byte[] transform(final ClassLoader loader, final String className,
       final Class<?> classBeingRedefined, final ProtectionDomain protectionDomain,
       final byte[] classfileBuffer) throws IllegalClassFormatException {
+    // filter out classes we shouldn't instrument
+    // TODO
+
     // load the class file
     final ClassReader classReader = new ClassReader(classfileBuffer);
-    // TODO
+    final ClassWriter classWriter = new ClassWriter(0);
+    // TODO we need to capture the function call line numbers
+    classReader.accept(new CallgrindClassVisitor(ASM_VERSION, classWriter), 0);
 
     // record the class we've transformed
     final String dottedName = makeDottedNameFromSlashName(className);
     classMap.put(dottedName, new ClassDetails(loader));
 
-    // TODO Auto-generated method stub
-    return null;
+    return classWriter.toByteArray();
   }
 }
